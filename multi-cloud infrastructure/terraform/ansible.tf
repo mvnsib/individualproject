@@ -16,10 +16,6 @@ resource "null_resource" "null" {
     ]
     
     provisioner "local-exec" {
-        command = "sleep 60"
-    }
-
-    provisioner "local-exec" {
 
         command = "ansible-inventory --graph"
     }
