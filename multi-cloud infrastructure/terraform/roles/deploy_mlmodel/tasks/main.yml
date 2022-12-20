@@ -1,0 +1,30 @@
+#Waiting for the nodes to be ready
+- name: Wait for all nodes
+  shell: kubectl wait --for=condition=Ready nodes --all --timeout=600s
+  register: nodes_ready
+
+#Copy manifest file to master node
+- name: Copy deployment manifest file to remote ec2 instance
+  copy:
+    src: deployment.yaml
+    dest: $HOME
+  when: nodes_ready.changed
+
+#Deploy the image in EC2 by applying the manifest file
+- name: deploy the image
+  shell: kubectl apply -f $HOME/deployment.yaml
+
+#Due to pods taking some time to be ready and expose it for service
+- name: Wait for pods to be ready
+  shell: kubectl wait --namespace=default --for=condition=Ready pods --all --timeout=600s
+
+#Copy manifest file to master node
+- name: Copy service manifest file to remote ec2 instance
+  copy:
+    src: service.yaml
+    dest: $HOME
+  when: nodes_ready.changed
+
+#Exposing the service
+- name: expose the deployment
+  shell: kubectl apply -f $HOME/service.yaml

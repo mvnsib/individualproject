@@ -1,0 +1,146 @@
+---
+#Restarting the daemon
+- name: Restarting
+  command: systemctl daemon-reload
+
+#update the latest yum repository
+- name: yum update
+  yum:
+    name: '*'
+    state: latest
+
+# the repository key to install kubernetes
+- name: add key repo
+  rpm_key:
+    key: https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
+    state: present
+  
+# Kubernetes repository
+- name: Configure yum repo for Kubernetes
+  yum_repository:
+    name: kubernetes
+    baseurl: https://packages.cloud.google.com/yum/repos/kubernetes-el7-\$basearch
+    enabled: yes
+    gpgcheck: yes
+    repo_gpgcheck: no
+    description: "Yum repository for Kubernetes"
+
+# installs the packages listed in the vars/
+- name: Install required packages
+  yum:
+    name: "{{ item }}"
+    state: present
+  loop: "{{ pkgs }}"
+
+# Initiates docker and kubelet
+- name: Start and enable kubelet and docker
+  service:
+    name: "{{ item }}"
+    state: started
+    enabled: yes
+  loop: "{{ services }}"
+  register: svc_start
+
+#pulls the configuration for docker images
+- name: Docker config image
+  shell:
+    cmd: "kubeadm config images pull"
+  when: svc_start.changed
+
+#Updates the docker container group
+- name: Updating Docker cgroup on Master Node
+  copy:
+    dest: /etc/docker/daemon.json
+    content: |
+      {
+      "exec-opts": ["native.cgroupdriver=systemd"]
+      }
+
+#Restarts docker after the updated cgroup
+- name: Restart docker on Master Node
+  service:
+    name: docker
+    state: restarted
+
+#incase the containerd is missing it is regenerated
+- name: fix containerd
+  shell: containerd config default | sudo tee /etc/containerd/config.toml
+
+- name: restart containerd
+  shell: sudo systemctl restart containerd
+  
+#Updates the IP table for the kubernetes config
+- name: Updating IP tables on master node
+  copy:
+    dest: /etc/sysctl.d/k8s.conf
+    content: |
+      net.bridge.bridge-nf-call-ip6tables = 1
+      net.bridge.bridge-nf-call-iptables = 1
+
+#Loads the settings
+- name: Load settings from all system configuration files
+  shell:
+    cmd: sysctl --system
+
+#Initiates the kubernetes master node by throwing in the control plane endpoint = EC2 public IP
+- name: Start the kubernetes master
+  shell:
+    cmd: kubeadm init --control-plane-endpoint "{{ groups['Master_Node'][0] }}" --pod-network-cidr=10.244.0.0/16 --ignore-preflight-errors=NumCPU --ignore-preflight-errors=Mem
+
+# setting up the kube config in master node
+- name: Setting up kubectl on Master Node
+  shell:
+    cmd: |
+      mkdir -p $HOME/.kube
+      sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+      sudo chown $(id -u):$(id -g) $HOME/.kube/config
+
+#Generates token for worker nodes to join
+- name: Get token
+  shell:
+    cmd: "kubeadm token create --print-join-command"
+  register: token 
+
+#Sets up flannel network - CNI plugin to use internal IP within the cluster
+- name: Setup flannel network
+  shell:
+    cmd: kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
+
+#Restart kubelet in case
+- name: restart kubelet
+  shell: sudo systemctl restart kubelet
+
+#Restart containerd 
+- name: restart containerd
+  shell: sudo systemctl restart containerd
+  
+#creates the flannel directory 
+- name: Create /etc/cni/net.d/10-flannel directory
+  file:
+    path: /etc/cni/net.d
+    state: directory
+
+#Updates the config list file in case it wasn't configured right
+- name: Update 10-flannel
+  copy:
+    dest: /etc/cni/net.d/10-flannel.conflist
+    content: |
+      {
+        "name": "cbr0",
+        "plugins": [
+          {
+            "type": "flannel",
+            "delegate": {
+              "hairpinMode": true,
+              "isDefaultGateway": true
+            }
+          },
+          {
+            "type": "portmap",
+            "capabilities": {
+              "portMappings": true
+            } 
+          }
+        ]
+      } 
+

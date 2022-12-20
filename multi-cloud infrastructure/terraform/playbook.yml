@@ -1,0 +1,22 @@
+#Configuration process works in a sequence, the master node is iniated first to use the kubeadm init command
+#declares the role's name so it can carry out its tasks 
+- name: Configure Kubernetes Master Node
+  hosts: Master_Node
+  remote_user: ec2-user
+  roles:
+    - role: kubernetes_master
+
+#once master node is fully configured the worker node is next
+- name: Configure Kubernetes Worker Node
+  hosts: Worker_Node
+  remote_user: vm-user
+  roles:
+    - role: kubernetes_worker
+
+#To automate the deployment, without having to deal with manual setup of the manifest scripts
+- name: Deploy image to Kubernetes 
+  hosts: Master_Node
+  remote_user: ec2-user
+  roles:
+    - role: deploy_mlmodel
+

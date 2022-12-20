@@ -1,0 +1,7 @@
+---
+# handlers file for kubernetes.master
+- name: restart docker
+  service:
+    name: "{{ services[1] }}"
+    state: restarted
+

@@ -1,0 +1,19 @@
+
+# defaults file for kubernetes worker
+
+# Packages to be installed for Kubernetes
+pkgs:
+  - kubelet
+  - kubectl
+  - kubeadm
+  - iproute-tc
+
+# Services to be started, notice that docker isn't here as it was required to install a different version from the repository link in tasks/
+services:
+  - kubelet
+
+# Path for docker configuration directory
+docker_daemon: /etc/docker/daemon.json
+
+# Path for sysctl.d configuration directory
+kubernetes_config: /etc/sysctl.d/k8s.conf

@@ -1,0 +1,18 @@
+galaxy_info:
+  author: Mansib Rahman
+  description: This playbook is used for our Kubernetes architecture for our worker node
+  company: Independent
+
+  license: BSD
+
+  platforms:
+  - name: Fedora
+    versions:
+    - all
+    - 25
+
+
+  galaxy_tags: []
+
+
+dependencies: []

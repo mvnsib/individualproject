@@ -1,0 +1,13 @@
+#Used for exposing the service making the web application accessible
+apiVersion: v1
+kind: Service
+metadata:
+  name: flask-app-service
+spec:
+  ports:
+    - nodePort: 31049
+      port: 5000
+      targetPort: 5000
+  selector:
+    app: flask-app
+  type: NodePort
