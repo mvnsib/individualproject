@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300italic,700,700italic">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/milligram/1.4.1/milligram.css">
+    <title>Wound Image Classification</title>
+</head>
+
+<body>
+
+    <div class="container">
+        <div class="row" style="display: flex; justify-content: center;">
+            <h1>Wound Classification Model</h1>
+        </div>
+        <div class="row" style="display: flex; justify-content: center;">
+            <p>Detects wound by DFU, VLU, PU & SW  </p>
+        </div>
+        <div class="row">
+            <h2>Image</h2>
+        </div>
+        <div class="row">
+            <img id="uploadedImg">
+        </div>
+        <label>Upload your image:</label>
+        <div class="row">
+
+
+            <form enctype="multipart/form-data" method="POST" action="/predict" name="fileinfo">
+                
+                <input type="file" name="file" required />
+                <input type="submit" value="Classify!" style="background-color: #00c2ae;"/>
+            </form>
+    
+        </div>
+        <div class="row">
+            <h2>Prediction</h2>
+            <div id="loader" class="lds-dual-ring"></div>
+        </div>
+        <div id="result" class="grid-container">
+            <p>{{ result }}</p>
+        </div>
+    </div>
+
+
+
+
+   
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <script async defer src="https://buttons.github.io/buttons.js"></script>
+</body>
+<footer style="width: 100%; position: fixed; margin-bottom: 0; margin-left: 10px; bottom: 0; height: 75px;">
+    <br>
+    <p>Developed by Mansib Rahman</p>
+</footer>
+
+</html>
